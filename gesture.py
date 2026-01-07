@@ -15,12 +15,12 @@ start_pos = None
 end_pos = None
 
 def classify_movement(start, end, lm):
-    if not start and not end:
+    if not start or not end:
         return None
     
     dx, dy = displacement(start, end, lm)
 
-    if abs(dx) < 0.05 and abs(dy) < 0.05:
+    if abs(dx) < 0.1 and abs(dy) < 0.1:
         return None
 
     if abs(dx) > abs(dy):
@@ -34,32 +34,37 @@ def track_movement(lm):
     curr = (lm[8].x, lm[8].y)
 
     gesture_detected = detect_gesture(lm)
+    gesture_name = None
 
     if gesture_detected and not gesture_active:
         gesture_active = True
+        gesture_name = gesture_detected
         start_pos = curr
     elif gesture_active and gesture_detected:
         end_pos = curr
     elif gesture_active and not gesture_detected:
         gesture_active = False
+        if end_pos is None: # when gesture active but gesture not there (eg, hand remove)
+            end_pos= start_pos
         movement = classify_movement(start_pos, end_pos, lm)
         # reset after movement is computed
         start_pos = None
         end_pos = None
         if movement: 
-            return f"{movement}"
+            return f"{gesture_name}_{movement}"
     
     return None
 
 def displacement(p1, p2, lm):
-    if p2 is not None and p1 is not None:
-        dx = p2[0] - p1[0]
-        dy = p2[1] - p1[1]
+    if p2 is not None or p1 is not None:
+        return 0,0
+    dx = p2[0] - p1[0]
+    dy = p2[1] - p1[1]
     # normalizing
     hand_size = euclidean_distance(lm[0], lm[9])
-    dx /= hand_size
-    dy /= hand_size
-    return dx, dy
+    if hand_size == 0:
+        return 0,0
+    return dx/hand_size, dy/hand_size
 
 def detect_gesture(landmarks):
     thumb_tip = landmarks[4].y
