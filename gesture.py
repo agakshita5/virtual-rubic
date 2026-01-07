@@ -1,7 +1,7 @@
 import cv2
 import mediapipe as mp
 import threading
-import time
+from datetime import datetime
 import os
 import warnings
 
@@ -14,11 +14,11 @@ gesture_active = False
 start_pos = None
 end_pos = None
 
-def classify_movement(start, end):
+def classify_movement(start, end, lm):
     if not start and not end:
         return None
     
-    dx, dy = displacement(start, end)
+    dx, dy = displacement(start, end, lm)
 
     if abs(dx) < 0.05 and abs(dy) < 0.05:
         return None
@@ -31,7 +31,7 @@ def classify_movement(start, end):
 def track_movement(lm):
     global gesture_active, start_pos, end_pos
     
-    curr = lm[8].x, lm[8].y
+    curr = (lm[8].x, lm[8].y)
 
     gesture_detected = detect_gesture(lm)
 
@@ -42,16 +42,20 @@ def track_movement(lm):
         end_pos = curr
     elif gesture_active and not gesture_detected:
         gesture_active = False
+        movement = classify_movement(start_pos, end_pos, lm)
+        # reset after movement is computed
         start_pos = None
         end_pos = None
-        return f"{gesture_detected}_{classify_movement(start_pos, end_pos)}"
+        if movement: 
+            return f"{movement}"
+    
+    return None
 
-# def get_point(lm):
-#     return lm[8].x, lm[8].y
-
-def displacement(p1, p2):
-    dx = p2[0] - p1[0]
-    dy = p2[1] - p1[1]
+def displacement(p1, p2, lm):
+    if p2 is not None and p1 is not None:
+        dx = p2[0] - p1[0]
+        dy = p2[1] - p1[1]
+    # normalizing
     hand_size = euclidean_distance(lm[0], lm[9])
     dx /= hand_size
     dy /= hand_size
@@ -67,21 +71,9 @@ def detect_gesture(landmarks):
     thumb_base = landmarks[2].y
     index_base = landmarks[5].y
 
-
     if (thumb_tip < thumb_base and index_tip < index_base and 
         middle_tip < index_base and ring_tip < index_base and pinky_tip < index_base):
         return "open hand"
-
-    # if (thumb_tip < index_base and index_tip > index_base and middle_tip > index_base and 
-    #     ring_tip > index_base and pinky_tip > index_base):
-    #     return "thumbs up"
-
-    # if (index_tip > index_base and middle_tip > index_base and 
-    #     ring_tip > index_base and pinky_tip > index_base):
-    #     return "fist"
-    
-    # if (euclidean_distance(landmarks[4], landmarks[8]) < 0.03):
-    #     return "pinch"
     
     return None
 
@@ -90,15 +82,22 @@ model_path = "hand_landmarker.task"
 BaseOptions = mp.tasks.BaseOptions
 HandLandmarker = mp.tasks.vision.HandLandmarker
 HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
+HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
 VisionRunningMode = mp.tasks.vision.RunningMode
+
+rresult = None
+def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
+    global rresult
+    rresult = result
 
 options = HandLandmarkerOptions(
     base_options=BaseOptions(model_asset_path=model_path),
-    running_mode=VisionRunningMode.IMAGE,
+    running_mode=VisionRunningMode.LIVE_STREAM,
     num_hands=1,
     min_hand_detection_confidence=0.7,
     min_hand_presence_confidence=0.7,
-    min_tracking_confidence=0.7
+    min_tracking_confidence=0.7,
+    result_callback=print_result
 )
 
 cap = cv2.VideoCapture(0)
@@ -116,34 +115,27 @@ with HandLandmarker.create_from_options(options) as landmarker:
             data=rgb_frame
         )
 
-        result = landmarker.detect(mp_image)
+        landmarker.detect_async(mp_image, int(datetime.now().timestamp() * 1000))
 
         gesture = None
 
-        if result.hand_landmarks:
-            for hand_landmarks in result.hand_landmarks:
-                dg = detect_gesture(hand_landmarks)
+        if rresult and rresult.hand_landmarks:
+            for hand_landmarks in rresult.hand_landmarks:
+                # gesture : static, movement : not static (spl case of gesture)
                 tm = track_movement(hand_landmarks)
-                if dg:
-                    gesture = dg
                 if tm:
                     gesture = tm
-
+                else:
+                    gesture = detect_gesture(hand_landmarks)
+                
                 h, w, _ = frame.shape
                 for lm in hand_landmarks:
                     cx, cy = int(lm.x * w), int(lm.y * h)
                     cv2.circle(frame, (cx, cy), 4, (0, 255, 0), -1)
 
         if gesture:
-            text = gesture
-            color = (215, 70, 123) 
-            font = cv2.FONT_HERSHEY_SIMPLEX
-
-            x, y = 50, 80
-
-            cv2.putText(frame, text, (x + 2, y + 2), font, 2, (0, 0, 0), 3, cv2.LINE_AA)
-            cv2.putText(frame, text, (x, y), font, 2, color, 2, cv2.LINE_AA)
-
+            cv2.putText(frame, gesture, (52, 82), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3, cv2.LINE_AA)
+            cv2.putText(frame, gesture, (50, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (215, 70, 123) , 2, cv2.LINE_AA)
 
         cv2.imshow("Hand Gesture Recognition", frame)
 
