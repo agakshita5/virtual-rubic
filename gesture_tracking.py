@@ -50,7 +50,8 @@ with GestureRecognizer.create_from_options(options) as recognizer:
 
         if current_gesture:
             cv2.putText(frame,current_gesture,(40, 80),cv2.FONT_HERSHEY_SIMPLEX,2,(0, 255, 255),3)
-            # if current_gesture == "open hand"
+            if current_gesture == "Open_Palm":
+                # todo
         cv2.imshow("Gesture Recognition", frame)
 
         if cv2.waitKey(1) & 0xFF == 27: 
