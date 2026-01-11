@@ -16,6 +16,7 @@ HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
 VisionRunningMode = mp.tasks.vision.RunningMode
 
 current_gesture = None
+direction_text = None
 in_control = False
 prev_center = None # movement state outside the callback
 curr_center = None
@@ -26,7 +27,6 @@ def g_result_callback(result, output_image, timestamp_ms):
     if result.gestures:
         # First hand, top prediction
         gesture = result.gestures[0][0] 
-        # if gesture:
         in_control = True
         current_gesture = gesture.category_name
     else:
@@ -43,8 +43,9 @@ def l_result_callback(result: HandLandmarkerResult, output_image: mp.Image, time
 
 disp_ges = None # text to put on screen (don't rely on async callback)
 def track_movement():
-    global prev_center, curr_center, current_gesture, disp_ges
+    global prev_center, curr_center, current_gesture, disp_ges, direction_text
     if not in_control or lldm is None:
+        direction_text = None
         prev_center = None
         return
 
@@ -59,7 +60,7 @@ def track_movement():
     dy = curr_center[1] - prev_center[1]
 
     MOVE_THRESH = 0.015
-    AXIS_RATIO = 1.3
+    AXIS_RATIO = 1.3 # one axis must dominate the other - as hands doesn't move straight
 
     if abs(dx) < MOVE_THRESH and abs(dy) < MOVE_THRESH:
         prev_center = curr_center
@@ -72,8 +73,9 @@ def track_movement():
     else:
         prev_center = curr_center
         return
-
-    current_gesture = f"{current_gesture}_{direction}"
+    
+    current_gesture = f"{current_gesture}"
+    direction_text = f"direction: {direction}"
     disp_ges = current_gesture 
     prev_center = curr_center 
 
@@ -112,7 +114,8 @@ with GestureRecognizer.create_from_options(g_options) as recognizer, HandLandmar
         
         track_movement()
         if disp_ges:
-            cv2.putText(frame,disp_ges,(40, 80),cv2.FONT_HERSHEY_SIMPLEX,1.5,(255, 0, 255),3)
+            cv2.putText(frame,disp_ges,(40, 80),cv2.FONT_HERSHEY_SIMPLEX,1.5,(255, 0, 255),5)
+            cv2.putText(frame,direction_text,(40, 150),cv2.FONT_HERSHEY_SIMPLEX,1.5,(0, 0, 0),5)
 
         cv2.imshow("Gesture Recognition", frame)
 
