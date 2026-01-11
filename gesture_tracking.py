@@ -60,7 +60,7 @@ def track_movement():
     dy = curr_center[1] - prev_center[1]
 
     MOVE_THRESH = 0.015
-    AXIS_RATIO = 1.3 # one axis must dominate the other - as hands doesn't move straight
+    AXIS_RATIO = 1.3 # one axis must dominate the other - as hands don't move straight
 
     if abs(dx) < MOVE_THRESH and abs(dy) < MOVE_THRESH:
         prev_center = curr_center
