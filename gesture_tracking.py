@@ -2,6 +2,7 @@ import cv2
 import time
 import mediapipe as mp
 import warnings
+import numpy as np
 warnings.filterwarnings("ignore")
 
 g_model_path = "gesture_recognizer.task"
@@ -20,20 +21,32 @@ direction_text = None
 in_control = False
 prev_center = None # movement state outside the callback
 curr_center = None
+lldm = None
+
+def is_pinch():
+    if lldm is None: 
+        return False
+    thumb_tip = lldm[4]
+    index_tip = lldm[8]
+    pinch_dist = np.linalg.norm(np.array([thumb_tip.x - index_tip.x, thumb_tip.y - index_tip.y]))
+    hand_size = np.linalg.norm(np.array([lldm[0].x - lldm[9].x, lldm[0].y - lldm[9].y]))
+    return pinch_dist/hand_size < 0.3 # pinch dist relative to hand size
 
 def g_result_callback(result, output_image, timestamp_ms):
     global current_gesture, in_control
-
+    
     if result.gestures:
-        # First hand, top prediction
-        gesture = result.gestures[0][0] 
         in_control = True
-        current_gesture = gesture.category_name
+        # First hand, top prediction
+        if is_pinch():
+            current_gesture = "Pinch"
+        else:
+            gesture = result.gestures[0][0] 
+            current_gesture = gesture.category_name
     else:
         in_control = False
         current_gesture = None
 
-lldm = None
 def l_result_callback(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
     global lldm
     if result.hand_landmarks:
