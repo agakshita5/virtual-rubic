@@ -1,15 +1,15 @@
-'''cube = [
-  [ [cubelet, cubelet, cubelet],   # layer 0
-    [cubelet, cubelet, cubelet],
-    [cubelet, cubelet, cubelet] ],
+'''cube = [ y z x
+  [ [000, 001, 002],   # layer 0
+    [010, 011, 012],
+    [020, 021, 022] ],
 
-  [ [cubelet, cubelet, cubelet],   # layer 1
-    [cubelet, cubelet, cubelet],
-    [cubelet, cubelet, cubelet] ],
+  [ [100, 101, 102],   # layer 1
+    [110, 111, 112],
+    [120, 121, 122] ],
 
-  [ [cubelet, cubelet, cubelet],   # layer 2
-    [cubelet, cubelet, cubelet],
-    [cubelet, cubelet, cubelet] ],
+  [ [200, 201, 202],   # layer 2
+    [210, 211, 212],
+    [220, 221, 222] ],
 ]
 
  00 01 02
@@ -35,5 +35,23 @@ for y in range(3):
             if y == 0:
                 cubelet['D'] = 'BLUE'
 
+def rotate_cubelet_faces(cubelet, axis, direction):
+    # rotate around y (left/right)
+    if axis == 'y': 
+        curr_cubelet = cubelet.copy()
+        if direction == 'RIGHT': # F-R-B-L-F
+            cubelet['R'] = curr_cubelet['B']
+            cubelet['B'] = curr_cubelet['L']
+            cubelet['L'] = curr_cubelet['F']
+            cubelet['F'] = curr_cubelet['R']
+        elif direction == 'LEFT': # F-L-B-R-F 
+            cubelet['L'] = curr_cubelet['B']
+            cubelet['B'] = curr_cubelet['R']
+            cubelet['R'] = curr_cubelet['F']
+            cubelet['F'] = curr_cubelet['L']
+    # rotate around x (up/down): U-B-D-F-U (clk)
+    elif axis == 'x':
+        pass
 
-
+    
+ 
