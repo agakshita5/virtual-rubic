@@ -1,13 +1,13 @@
 '''cube = [ y z x
-  [ [000, 001, 002],   # layer 0
+  [ [000, 001, 002],    # layer 0
     [010, 011, 012],
     [020, 021, 022] ],
 
-  [ [100, 101, 102],  y=1, z=0 ,x=0/1/2 # layer 1  right     102,112,122 y=1, z=0/1/2 ,x=2
-    [110, 111, 112],  y=1, z=1 ,x=0/1/2                      101,111,121 y=1, z=0/1/2 ,x=1
-    [120, 121, 122] ],y=1, z=2 ,x=0/1/2                      100,110,120 y=1, z=0/1/2 ,x=0
-new[z][x] = old[x][2-z]
-  [ [200, 201, 202],   # layer 2
+  [ [100, 101, 102],    # layer 1
+    [110, 111, 112],
+    [120, 121, 122] ],
+
+  [ [200, 201, 202],    # layer 2
     [210, 211, 212],
     [220, 221, 222] ],
 ]
@@ -65,51 +65,37 @@ def rotate_cubelet_faces(cubelet, axis, direction):
             cubelet['F'] = curr_cubelet['U']
 
 def rotate_slice(axis, layer_index, direction):
-    # right direction
-    if direction=='RIGHT' or direction=='LEFT': # (z, x) -> (x, 2−z)
+    if axis=='y': # rotate (z,x) grid
         # position
         old = [[cube[layer_index][z][x] for x in range(3)] for z in range(3)]
-        for z in range(3):
-            for x in range(3):
-                cube[layer_index][z][x] = old[x][2-z]
+        if direction=='RIGHT':
+            for z in range(3):
+                for x in range(3):
+                    cube[layer_index][z][x] = old[x][2-z]
+        elif direction=='LEFT':
+            for z in range(3):
+                for x in range(3):
+                    cube[layer_index][z][x] = old[2-x][z]
+
         # face rotation
         for z in range(3):
             for x in range(3):
-                rotate_cubelet_faces(cube[layer_index][z][x],axis='y',direction='RIGHT')
+                rotate_cubelet_faces(cube[layer_index][z][x],axis='y',direction=direction)
 
-    # left direction
-    # if direction=='LEFT': # (z, x) -> (x, 2−z)
-    #     # position
-    #     old = [[cube[layer_index][z][x] for x in range(3)] for z in range(3)]
-    #     for z in range(3):
-    #         for x in range(3):
-    #             cube[layer_index][z][x] = old[2-x][z]
-    #     # face rotation
-    #     for z in range(3):
-    #         for x in range(3):
-    #             rotate_cubelet_faces(cube[layer_index][z][x],axis='y',direction='LEFT')
+    elif axis=='x': # rotate (y,z) grid
+        # position
+        old = [[cube[y][z][layer_index] for z in range(3)] for y in range(3)]
+        if direction=='UP':
+            for y in range(3):
+                for z in range(3):
+                    cube[y][z][layer_index] = old[z][2-y]
+        elif direction=='DOWN':
+            for y in range(3):
+                for z in range(3):
+                    cube[y][z][layer_index] = old[2-z][y]
 
-    # # up direction
-    # if direction=='UP': # (y, z) -> (z, 2−y)
-    #     # position
-    #     old = [[cube[y][z][layer_index] for y in range(3)] for z in range(3)]
-    #     for z in range(3):
-    #         for x in range(3):
-    #             cube[y][z][layer_index] = old[2-y][z]
-    #     # face rotation
-    #     for z in range(3):
-    #         for x in range(3):
-    #             rotate_cubelet_faces(cube[y][z][layer_index],axis='x',direction='UP')
-
-    # # down direction
-    # if direction=='DOWN': # (y, z) -> (z, 2−y)
-    #     # position
-    #     old = [[cube[y][z][layer_index] for y in range(3)] for z in range(3)]
-    #     for z in range(3):
-    #         for x in range(3):
-    #             cube[y][z][layer_index] = old[2-y][z]
-    #     # face rotation
-    #     for z in range(3):
-    #         for x in range(3):
-    #             rotate_cubelet_faces(cube[y][z][layer_index],axis='x',direction='DOWN')
+        # face rotation
+        for y in range(3):
+            for z in range(3):
+                rotate_cubelet_faces(cube[y][z][layer_index], axis='x', direction=direction)
 
