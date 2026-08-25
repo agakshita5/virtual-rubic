@@ -5,6 +5,7 @@ from mediapipe.tasks.python import vision
 import numpy as np
 
 cap = cv2.VideoCapture(0) # webcam
+print('DEBUG: webcam opened\n')
 
 # as it is
 base_options = python.BaseOptions(

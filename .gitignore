@@ -1,4 +1,6 @@
 myvenv/
 *.task
 landmarks.py
-*.txt
+gesture.py
+draft.txt
+.DS_Store

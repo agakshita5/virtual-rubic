@@ -2,6 +2,9 @@ import cv2
 import mediapipe as mp
 import threading
 from datetime import datetime
+import mediapipe as mp
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
 import os
 import warnings
 
@@ -84,10 +87,7 @@ def detect_gesture(landmarks):
 
 model_path = "hand_landmarker.task"
 
-BaseOptions = mp.tasks.BaseOptions
-HandLandmarker = mp.tasks.vision.HandLandmarker
-HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
+HandLandmarkerResult = vision.HandLandmarkerResult
 VisionRunningMode = mp.tasks.vision.RunningMode
 
 rresult = None
@@ -95,19 +95,19 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
     global rresult
     rresult = result
 
-options = HandLandmarkerOptions(
-    base_options=BaseOptions(model_asset_path=model_path),
-    running_mode=VisionRunningMode.LIVE_STREAM,
-    num_hands=1,
-    min_hand_detection_confidence=0.7,
-    min_hand_presence_confidence=0.7,
-    min_tracking_confidence=0.7,
-    result_callback=print_result
+options = vision.HandLandmarkerOptions(
+    base_options = python.BaseOptions(model_asset_path=model_path),
+    running_mode = VisionRunningMode.LIVE_STREAM,
+    num_hands = 1,
+    min_hand_detection_confidence = 0.7,
+    min_hand_presence_confidence = 0.7,
+    min_tracking_confidence = 0.7,
+    result_callback = print_result
 )
 
 cap = cv2.VideoCapture(0)
 
-with HandLandmarker.create_from_options(options) as landmarker:
+with vision.HandLandmarker.create_from_options(options) as landmarker:
     while True:
         ret, frame = cap.read()
         if not ret:
