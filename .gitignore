@@ -4,3 +4,4 @@ landmarks.py
 gesture.py
 draft.txt
 .DS_Store
+*__pycache__/
